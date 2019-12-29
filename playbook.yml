@@ -1,0 +1,152 @@
+---
+- hosts: localhost
+  tasks:
+    - name: Clean up the temp image
+      file:
+        path: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2'
+        state: absent
+    - name: Clean up the local temp dir
+      file:
+        path: images/basehost
+        state: absent
+    - name: Clean up the basehost
+      virt_lightning.virt_lightning.virt_lightning:
+        distro: '{{ base.distro }}'
+        name: basehost
+        state: absent
+    - name: Clean up the temp VM
+      virt_lightning.virt_lightning.virt_lightning:
+        distro: '{{ base.distro }}'
+        name: newvm
+        state: absent
+
+- hosts: localhost
+  tasks:
+    - name: Create the Base VM
+      virt_lightning.virt_lightning.virt_lightning:
+        distro: '{{ base.distro }}'
+        name: basehost
+        state: present
+
+    - name: Refresh inventory to ensure new instaces exist in inventory
+      meta: refresh_inventory
+
+- hosts: basehost
+  tasks:
+    - name: install the dependencies
+      shell: "/usr/sbin/pkg_add -U {{ item }}"
+      with_items: '{{ dependencies }}'
+      become: true
+      environment:
+          PKG_PATH: 'http://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/{{ ansible_machine }}/{{ ansible_distribution_release }}/All/'
+      when: ansible_os_family == "NetBSD"
+    - name: Install the rootcerts
+      command: /usr/pkg/sbin/mozilla-rootcerts install
+      become: true
+      args:
+        creates: /etc/openssl/certs/ca-certificates.crt
+      when: ansible_os_family == "NetBSD"
+    - name: install the dependencies
+      package:
+          name: '{{ dependencies }}'
+      become: true
+      when: ansible_os_family != "NetBSD"
+    - git:
+        repo: '{{ builder_repo }}'
+        dest: builder
+        version: debug
+    - name: Build the images
+      shell: 'sudo -E bash build.sh {{ version }}'
+      args:
+          chdir: builder
+          creates: '{{ final_name }}.raw'
+    - name: Download the raw image
+      fetch:
+          src: 'builder/final.raw'
+          dest: images/
+
+- hosts: localhost
+  tasks:
+    - name: Export the images
+      command: 'qemu-img convert -f raw -O qcow2 -c images/basehost/builder/final.raw /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2'
+      args:
+        creates: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2'
+
+    - name: Write the image metadata
+      copy:
+        content: |
+          python_interpreter: /usr/local/bin/python3
+        dest: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.yaml'
+      when: final_name.startswith('freebsd') or final_name.startswith('openbsd')
+
+    - name: Write the image metadata
+      copy:
+        content: |
+          python_interpreter: /usr/pkg/bin/python3.7
+        dest: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.yaml'
+      when: final_name.startswith('netbsd')
+
+
+
+    - name: Create the new VM
+      virt_lightning.virt_lightning.virt_lightning:
+        distro: '{{ final_name }}_exp'
+        name: newvm
+        state: present
+
+    - name: Refresh inventory to ensure new instaces exist in inventory
+      meta: refresh_inventory
+
+    - name: gather facts from the new host
+      setup:
+      delegate_to: newvm
+      delegate_facts: true
+
+    - debug:
+        var: hostvars.newvm
+
+    - name: Install curl package
+      package:
+          name: curl
+      become: true
+      delegate_to: newvm
+
+    - name: Ensure the root FS has been resized
+      assert:
+        that: hostvars.newvm.ansible_mounts[0].size_total > 30000000000
+
+    - command: hostname
+      register: newvm_hostname
+      delegate_to: newvm
+    - name: Ensure the hostname is set properly
+      assert:
+        that: newvm_hostname.stdout == "newvm"
+
+    - name: Run a command as root with su to be sure the password is set
+      command: uptime
+      vars:
+          become: yes
+          become_method: su
+          become_user: root
+          become_password: root
+
+    - name: Destroy the new VM
+      virt_lightning.virt_lightning.virt_lightning:
+        name: newvm
+        state: absent
+    - name: Destroy the VM
+      virt_lightning.virt_lightning.virt_lightning:
+        name: basehost
+        state: absent
+
+    - name: Promote the new image
+      command: 'mv /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2 /var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2'
+      become: true
+
+    - name: Promote the new image
+      file:
+        path: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2'
+        owner: goneri
+        group: goneri
+        mode: '644'
+      become: true

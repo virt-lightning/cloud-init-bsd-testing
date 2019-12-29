@@ -1,0 +1,12 @@
+---
+version: 9.3
+final_name: freebsd-9
+base:
+  distro: freebsd-12
+dependencies:
+    - qemu-utils
+    - curl
+    - bash
+    - git
+    - ca_root_nss
+builder_repo: https://github.com/virt-lightning/freebsd-cloud-images

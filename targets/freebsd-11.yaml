@@ -1,0 +1,12 @@
+---
+version: 11.2
+final_name: freebsd-11
+base:
+  distro: freebsd-12
+dependencies:
+    - qemu-utils
+    - curl
+    - bash
+    - git
+    - ca_root_nss
+builder_repo: https://github.com/virt-lightning/freebsd-cloud-images
