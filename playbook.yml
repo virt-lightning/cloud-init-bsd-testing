@@ -139,14 +139,15 @@
         name: basehost
         state: absent
 
-    - name: Promote the new image
-      command: 'mv /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2 /var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2'
-      become: true
-
-    - name: Promote the new image
-      file:
-        path: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2'
-        owner: goneri
-        group: goneri
-        mode: '644'
-      become: true
+    - when: promote_image | default('false') | bool
+      block:
+      - name: Promote the new image
+        command: 'mv /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2 /var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2'
+        become: true
+      - name: Promote the new image
+        file:
+          path: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2'
+          owner: goneri
+          group: goneri
+          mode: '644'
+        become: true
