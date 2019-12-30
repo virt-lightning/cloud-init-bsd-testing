@@ -1,0 +1,11 @@
+---
+version: 9.0_RC1
+final_name: netbsd-9_RC1
+base:
+  distro: netbsd-8
+dependencies:
+    - git
+    - curl
+    - bash
+    - mozilla-rootcerts
+builder_repo: https://github.com/virt-lightning/netbsd-cloud-images

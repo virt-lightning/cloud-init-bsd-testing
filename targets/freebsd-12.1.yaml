@@ -1,6 +1,6 @@
 ---
 version: 12.1
-final_name: freebsd-12
+final_name: freebsd-12.1
 base:
   distro: freebsd-12
 dependencies:

@@ -1,6 +1,6 @@
 ---
-version: 9.3
-final_name: freebsd-9
+version: 10.3
+final_name: freebsd-10.3
 base:
   distro: freebsd-12
 dependencies:

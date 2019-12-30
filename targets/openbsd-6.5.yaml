@@ -1,0 +1,13 @@
+---
+version: 6.5
+final_name: openbsd-6.5
+base:
+  distro: openbsd-6
+dependencies:
+    - coreutils
+    - bash
+    - gsed
+    - flock
+    - bash
+    - git
+builder_repo: https://github.com/goneri/pcib
