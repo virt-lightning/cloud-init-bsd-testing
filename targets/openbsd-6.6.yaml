@@ -1,6 +1,7 @@
 ---
-version: 6.6
-final_name: openbsd-6.6
+image_os: openbsd
+image_version: 6.6
+final_name: "{{ image_os }}-{{ image_version }}"
 base:
   distro: openbsd-6
 dependencies:

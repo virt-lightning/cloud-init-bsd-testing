@@ -1,6 +1,7 @@
 ---
-version: 8.1
-final_name: netbsd-8.1
+image_os: netbsd
+image_version: 8.1
+final_name: "{{ image_os }}-{{ image_version }}"
 base:
   distro: netbsd-8
 dependencies:

@@ -56,7 +56,7 @@
         dest: builder
         version: debug
     - name: Build the images
-      shell: 'sudo -E bash build.sh {{ version }}'
+      shell: 'sudo -E bash build.sh {{ image_version }} {{ git_repo|default("canonical/cloud-init") }} {{ git_ref|default("master") }}'
       args:
           chdir: builder
           creates: '{{ final_name }}.raw'
@@ -66,6 +66,9 @@
           dest: images/
 
 - hosts: localhost
+  vars:
+    www_dir: /var/www/bsd-cloud-image.org/images
+    dest_dir: '{{ www_dir }}/{{ image_os }}/{{ image_version }}'
   tasks:
     - name: Export the images
       command: 'qemu-img convert -f raw -O qcow2 -c images/basehost/builder/final.raw /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2'
@@ -102,8 +105,26 @@
       delegate_to: newvm
       delegate_facts: true
 
-    - debug:
-        var: hostvars.newvm
+    - debug: var=hostvars.newvm
+    - debug: var=hostvars.newvm.ansible_distribution_version
+    - debug: var=hostvars.newvm.ansible_facts.distribution_version
+    - debug: var=hostvars.newvm.ansible_kernel
+    - debug: var=image_version
+
+    - assert:
+        that:
+          - hostvars.newvm.ansible_dns.nameservers == ['192.168.123.1']
+          - hostvars.newvm.ansible_facts.os_family|lower == image_os
+
+    - assert:
+        that:
+          - hostvars.newvm.ansible_facts.distribution_version == image_version|string
+      when: not final_name.startswith('netbsd')
+
+    - assert:
+        that:
+          - hostvars.newvm.ansible_kernel == image_version|string
+      when: final_name.startswith('netbsd')
 
     - name: Install curl package
       package:
@@ -141,13 +162,10 @@
 
     - when: promote_image | default('false') | bool
       block:
-      - name: Promote the new image
-        command: 'mv /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2 /var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2'
+      - file:
+          path: '{{ dest_dir }}'
+          state: directory
         become: true
       - name: Promote the new image
-        file:
-          path: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2'
-          owner: goneri
-          group: goneri
-          mode: '644'
+        command: 'mv /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2 {{ dest_dir }}/{{ final_name }}.qcow2'
         become: true

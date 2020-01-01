@@ -1,6 +1,7 @@
 ---
-version: 12.1
-final_name: freebsd-12
+image_os: freebsd
+image_version: 12.1
+final_name: "{{ image_os }}-12"
 base:
   distro: freebsd-12
 dependencies:

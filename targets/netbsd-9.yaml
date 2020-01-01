@@ -1,5 +1,6 @@
 ---
-version: 9.0_RC1
+image_os: netbsd
+image_version: 9.0_RC1
 final_name: netbsd-9
 base:
   distro: netbsd-8
