@@ -134,7 +134,7 @@
 
     - name: Ensure the root FS has been resized
       assert:
-        that: hostvars.newvm.ansible_mounts[0].size_total > 30000000000
+        that: hostvars.newvm.ansible_mounts[0].size_total > 25000000000
 
     - command: hostname
       register: newvm_hostname
