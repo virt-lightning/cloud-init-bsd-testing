@@ -51,12 +51,13 @@
           name: '{{ dependencies }}'
       become: true
       when: ansible_os_family != "NetBSD"
-    - git:
+    - name: Fetch the builder script
+      git:
         repo: '{{ builder_repo }}'
         dest: builder
-        version: debug
+        version: master
     - name: Build the images
-      shell: 'sudo -E bash build.sh {{ image_version }} {{ git_repo|default("canonical/cloud-init") }} {{ git_ref|default("master") }}'
+      shell: 'sudo -E bash build.sh {{ image_version }} {{ git_repo|default("goneri/cloud-init") }} {{ git_ref|default("master") }}'
       args:
           chdir: builder
           creates: '{{ final_name }}.raw'
@@ -166,6 +167,9 @@
           path: '{{ dest_dir }}'
           state: directory
         become: true
-      - name: Promote the new image
+      - name: Promote the new image (1/2)
         command: 'mv /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2 {{ dest_dir }}/{{ final_name }}.qcow2'
+        become: true
+      - name: Promote the new image (2/2)
+        command: 'cp {{ dest_dir }}/{{ final_name }}.qcow2 /var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2'
         become: true
