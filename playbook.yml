@@ -61,6 +61,8 @@
       args:
           chdir: builder
           creates: '{{ final_name }}.raw'
+      environment:
+          DEBUG: ''
     - name: Download the raw image
       fetch:
           src: 'builder/final.raw'
