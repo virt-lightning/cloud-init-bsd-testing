@@ -127,11 +127,23 @@
           - hostvars.newvm.ansible_kernel == image_version|string
       when: final_name.startswith('netbsd')
 
+    - command: pkgin update
+      become: true
+      delegate_to: newvm
+      when: final_name.startswith('netbsd')
+
+    - command: pkgin -y install curl
+      become: true
+      delegate_to: newvm
+      when: final_name.startswith('netbsd')
+
     - name: Install curl package
       package:
           name: curl
+          # update_cache: true
       become: true
       delegate_to: newvm
+      when: not final_name.startswith('netbsd')
 
     - name: Ensure the root FS has been resized
       assert:
