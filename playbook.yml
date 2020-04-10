@@ -81,7 +81,7 @@
         content: |
           python_interpreter: /usr/local/bin/python3
         dest: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.yaml'
-      when: final_name.startswith('freebsd') or final_name.startswith('openbsd')
+      when: not final_name.startswith('netbsd')
 
     - name: Write the image metadata
       copy:
@@ -107,20 +107,31 @@
       delegate_facts: true
 
     - debug: var=hostvars.newvm
-    - debug: var=hostvars.newvm.ansible_distribution_version
+    - debug: var=image_version
+    - debug: var=image_os
+    - debug: var=final_name
+    - debug: var=hostvars.newvm.ansible_facts.os_family
     - debug: var=hostvars.newvm.ansible_facts.distribution_version
     - debug: var=hostvars.newvm.ansible_kernel
-    - debug: var=image_version
 
     - assert:
         that:
           - hostvars.newvm.ansible_dns.nameservers == ['192.168.123.1']
+
+    - assert:
+        that:
           - hostvars.newvm.ansible_facts.os_family|lower == image_os
+      when: image_os != "dragonflybsd"
+
+    - assert:
+        that:
+          - hostvars.newvm.ansible_facts.os_family == "DragonFly"
+      when: image_os == "dragonflybsd"
 
     - assert:
         that:
           - hostvars.newvm.ansible_facts.distribution_version == image_version|string
-      when: not final_name.startswith('netbsd')
+      when: not final_name.startswith('netbsd') and not image_os == "dragonflybsd"
 
     - assert:
         that:

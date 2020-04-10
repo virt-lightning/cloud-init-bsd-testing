@@ -1,0 +1,8 @@
+---
+image_os: dragonflybsd
+image_version: 5.6.3
+final_name: "{{ image_os }}-{{ image_version }}"
+base:
+  distro: dragonflybsd-5.6.3
+dependencies: []
+builder_repo: https://github.com/virt-lightning/dragonflybsd-cloud-images
