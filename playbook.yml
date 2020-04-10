@@ -196,3 +196,12 @@
       - name: Promote the new image (2/2)
         command: 'cp {{ dest_dir }}/{{ final_name }}.qcow2 /var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2'
         become: true
+
+      - name: Fix the ownership of the target dir
+        file:
+          path: '{{ dest_dir }}'
+          state: directory
+          recurse: yes
+          owner: goneri
+          group: goneri
+        become: true
