@@ -10,3 +10,4 @@ dependencies:
     - bash
     - mozilla-rootcerts
 builder_repo: https://github.com/virt-lightning/netbsd-cloud-images
+python_interpreter: /usr/pkg/bin/python3.7

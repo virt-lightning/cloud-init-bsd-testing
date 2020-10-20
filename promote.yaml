@@ -1,0 +1,31 @@
+---
+- hosts: localhost
+  vars:
+    www_dir: /var/www/bsd-cloud-image.org/images
+    dest_dir: '{{ www_dir }}/{{ image_os }}/{{ image_version }}'
+  tasks:
+    - file:
+        path: '{{ dest_dir }}'
+        state: directory
+      become: true
+    - name: Promote the new image (1/4)
+      command: 'mv /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2 {{ dest_dir }}/{{ final_name }}.qcow2'
+      become: true
+    - name: Promote the new image (yaml) (2/4)
+      command: 'mv /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.yaml {{ dest_dir }}/{{ final_name }}.yaml'
+      become: true
+    - name: Promote the new image (3/4)
+      command: 'cp {{ dest_dir }}/{{ final_name }}.qcow2 /var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2'
+      become: true
+    - name: Promote the new image (yaml) (4/4)
+      command: 'cp {{ dest_dir }}/{{ final_name }}.yaml /var/lib/virt-lightning/pool/upstream/{{ final_name }}.yaml'
+      become: true
+   
+    - name: Fix the ownership of the target dir
+      file:
+        path: '{{ dest_dir }}'
+        state: directory
+        recurse: yes
+        owner: goneri
+        group: goneri
+      become: true

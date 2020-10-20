@@ -1,9 +1,9 @@
 ---
 image_os: openbsd
-image_version: 6.6
+image_version: 6.8
 final_name: "{{ image_os }}-{{ image_version }}"
 base:
-  distro: openbsd-6
+  distro: openbsd-6.7
 dependencies:
     - coreutils
     - bash
@@ -12,4 +12,4 @@ dependencies:
     - bash
     - git
 builder_repo: https://github.com/goneri/pcib
-python_interpreter: /usr/local/bin/python3.7
+python_interpreter: /usr/local/bin/python3

@@ -4,25 +4,46 @@ export ANSIBLE_SSH_RETRIES=10
 export VIRTUAL_ENV_DISABLE_PROMPT=1
 . ~/virtualenv/bin/activate
 
-for i in 5.6.3; do
-    ansible-playbook -vvv playbook.yml -i inventory.yaml -e @targets/dragonflybsd-${i}.yaml -e promote_image=true
-    ./test-openstack dragonflybsd-${i} | tee dragonflybsd-${i}-openstack.log
+
+repo="goneri/cloud-init"
+promote_image=false
+
+
+log_dir=$(date +results/%Y%m%d-%H%M)
+mkdir -p ${log_dir}
+
+function run_test() {
+    os=$1
+    version=$2
+    git_repo=${3:-canonical/cloud-init}
+    ansible-playbook cleanup.yaml
+    ansible-playbook playbook.yml -i inventory.yaml -e @targets/${os}-${version}.yaml -e git_repo=${git_repo} -vvv
+    timeout 1800 ansible-playbook openstack.yaml -e @targets/${os}-${version}.yaml -vvv
+    timeout 1800 ansible-playbook openstack.yaml -e config_drive=yes -e @targets/${os}-${version}.yaml -vvv
+    ansible-playbook promote.yaml -e @targets/${os}-${version}.yaml -vvv
+
+}
+
+os=freebsd
+for version in 11.4 12.1; do
+    run_test ${os} ${version} ${repo} > ${log_dir}/${os}-${version}-build.log 2>&1
 done
 
-for i in 6.6; do
-    ansible-playbook -vvv playbook.yml -i inventory.yaml -e @targets/openbsd-${i}.yaml -e promote_image=true
-    ./test-openstack openbsd-${i} | tee openbsd-${i}-openstack.log
+os=netbsd
+for version in 8.2 9.0; do
+    run_test ${os} ${version} ${repo} > ${log_dir}/${os}-${version}-build.log 2>&1
 done
 
-for i in 8.2 9.0; do
-    ansible-playbook playbook.yml -i inventory.yaml -e @targets/netbsd-${i}.yaml -e promote_image=true
-    ./test-openstack netbsd-${i} | tee netbsd-${i}-openstack.log
+os=openbsd
+for version in 6.8; do
+    run_test ${os} ${version} ${repo} > ${log_dir}/${os}-${version}-build.log 2>&1
 done
 
-for i in 11.2 12.1; do
-    ansible-playbook playbook.yml -i inventory.yaml -e @targets/freebsd-${i}.yaml -e promote_image=true
-    ./test-openstack freebsd-${i} | tee freebsd-${i}-openstack.log
-done
+#os=dragonflybsd
+#for version in 5.8.3; do
+#    run_test ${os} ${version} ${repo} > ${log_dir}/${os}-${version}-build.log 2>&1
+#done
+
 
 sudo find /var/www/bsd-cloud-image.org -type f -exec chmod 644 {} \;
 sudo find /var/www/bsd-cloud-image.org -type d -exec chmod 755 {} \;

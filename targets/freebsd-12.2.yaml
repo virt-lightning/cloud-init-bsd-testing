@@ -1,6 +1,6 @@
 ---
 image_os: freebsd
-image_version: 12.1
+image_version: 12.2
 final_name: "{{ image_os }}-{{ image_version }}"
 base:
   distro: freebsd-12

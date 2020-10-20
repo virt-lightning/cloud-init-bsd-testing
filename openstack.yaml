@@ -1,0 +1,57 @@
+---
+- hosts: localhost
+  tasks:
+    - name: upload the image
+      openstack.cloud.image:
+        name: test_img
+        container_format: bare
+        disk_format: qcow2
+        state: present
+        filename: "/var/lib/virt-lightning/pool/upstream/{{final_name}}_exp.qcow2"
+    - name: create the volume disk
+      openstack.cloud.volume:
+        name: test_vol
+        size: 30
+        bootable: yes
+        image: test_img
+    - name: create the server
+      openstack.cloud.server:
+        name: test_vm
+        user_data: "{{lookup('file', 'user_data') }}"
+        boot_volume: test_vol
+        key_name: t450s-gone
+        flavor_ram: 1024
+        network: private
+        security_groups:
+          - ssh
+        config_drive: "{{ config_drive|default('no') }}"
+      register: my_vm
+    - set_fact:
+        vm_ip: "{{ my_vm.server.accessIPv4 }}"
+    - name: Add my_vm in the inventory
+      add_host:
+        hostname: vm
+        ansible_user: testvm
+        ansible_ssh_host: '{{ vm_ip }}'
+        ansible_ssh_extra_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+        ansible_ssh_private_key_file: ~/.ssh/cloud.key
+        ansible_python_interpreter: "{{ python_interpreter }}" 
+
+- hosts: vm
+  tasks:
+    - name: Call uname
+      command: uname -a
+    - name: Ensure sudo and network work fine
+      command: /sbin/ping -c 1 google.com
+      become: true
+
+- hosts: localhost
+  tasks:
+    - name: purge the test server
+      openstack.cloud.server:
+        name: test_vm
+        state: absent
+    - name: purge the volume disk
+      openstack.cloud.volume:
+        name: test_vol
+        state: absent
