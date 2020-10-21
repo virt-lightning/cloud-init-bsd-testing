@@ -30,7 +30,7 @@ for version in 11.4 12.1; do
 done
 
 os=netbsd
-for version in 8.2 9.0; do
+for version in 8.2 9.1; do
     run_test ${os} ${version} ${repo} > ${log_dir}/${os}-${version}-build.log 2>&1
 done
 
