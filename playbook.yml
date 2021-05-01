@@ -12,10 +12,13 @@
 
 - hosts: basehost
   tasks:
-    - when: ansible_distribution == 'OpenBSD'
+    - debug: var=ansible_distribution
+    - debug: var=ansible_distribution_major_version
+    - debug: var=ansible_distribution_version
+    - when: ansible_distribution == 'OpenBSD' and ansible_distribution_version != image_version|string
       block:
       - name: Upgrade OpenBSD
-        command: sysupgrade -n
+        command: sysupgrade -rn
         become: true
       - name: Unconditionally on the new version
         reboot:

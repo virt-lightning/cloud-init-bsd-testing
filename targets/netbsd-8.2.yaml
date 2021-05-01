@@ -3,7 +3,7 @@ image_os: netbsd
 image_version: 8.2
 final_name: "{{ image_os }}-{{ image_version }}"
 base:
-  distro: netbsd-8.1
+  distro: netbsd-8.2
 dependencies:
     - git
     - curl

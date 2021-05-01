@@ -3,7 +3,7 @@ image_os: freebsd
 image_version: 11.4
 final_name: "{{ image_os }}-{{ image_version }}"
 base:
-  distro: freebsd-12
+  distro: freebsd-11.4
 dependencies:
     - qemu-utils
     - curl
