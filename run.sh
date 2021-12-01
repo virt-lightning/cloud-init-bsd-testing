@@ -28,18 +28,18 @@ function run_test() {
 }
 
 os=openbsd
-for version in 6.8; do
-    run_test ${os} ${version} ${repo} > ${log_dir}/${os}-${version}-build.log 2>&1
+for version in 7.0; do
+    run_test ${os} ${version} ${repo} 2>&1 | tee ${log_dir}/${os}-${version}-build.log
 done
 
 os=freebsd
 for version in 11.4 12.2; do
-    run_test ${os} ${version} ${repo} > ${log_dir}/${os}-${version}-build.log 2>&1
+    run_test ${os} ${version} ${repo} 2>&1 | tee ${log_dir}/${os}-${version}-build.log
 done
 
 os=netbsd
 for version in 8.2 9.1; do
-    run_test ${os} ${version} ${repo} > ${log_dir}/${os}-${version}-build.log 2>&1
+    run_test ${os} ${version} ${repo} 2>&1 | tee ${log_dir}/${os}-${version}-build.log
 done
 
 #os=dragonflybsd
