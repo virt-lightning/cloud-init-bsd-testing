@@ -2,7 +2,7 @@
 - hosts: localhost
   tasks:
     - name: Create the Base VM
-      virt_lightning.virt_lightning.virt_lightning:
+      virt_lightning.virt_lightning.vm:
         distro: '{{ base.distro }}'
         name: basehost
         state: present
@@ -74,7 +74,7 @@
         dest: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.yaml'
 
     - name: Create the new VM
-      virt_lightning.virt_lightning.virt_lightning:
+      virt_lightning.virt_lightning.vm:
         distro: '{{ final_name }}_exp'
         name: newvm
         state: present
@@ -157,10 +157,10 @@
           become_password: root
 
     - name: Destroy the new VM
-      virt_lightning.virt_lightning.virt_lightning:
+      virt_lightning.virt_lightning.vm:
         name: newvm
         state: absent
     - name: Destroy the VM
-      virt_lightning.virt_lightning.virt_lightning:
+      virt_lightning.virt_lightning.vm:
         name: basehost
         state: absent

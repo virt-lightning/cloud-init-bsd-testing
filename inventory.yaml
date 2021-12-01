@@ -1,2 +1,2 @@
 ---
-plugin: virt_lightning.virt_lightning.virt_lightning_inventory
+plugin: virt_lightning.virt_lightning.inventory

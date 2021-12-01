@@ -24,11 +24,11 @@
         path: images/basehost
         state: absent
     - name: Clean up the basehost
-      virt_lightning.virt_lightning.virt_lightning:
+      virt_lightning.virt_lightning.vm:
         name: basehost
         state: absent
     - name: Clean up the temp VM
-      virt_lightning.virt_lightning.virt_lightning:
+      virt_lightning.virt_lightning.vm:
         name: newvm
         state: absent
 
