@@ -5,6 +5,7 @@
       virt_lightning.virt_lightning.vm:
         distro: '{{ base.distro }}'
         name: basehost
+        memory: 4096
         state: present
 
     - name: Refresh inventory to ensure new instaces exist in inventory
