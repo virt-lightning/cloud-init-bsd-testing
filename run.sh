@@ -18,7 +18,6 @@ function run_test() {
     version=${2}
     #git_repo=${3:-canonical/cloud-init}
     git_repo=${3}
-    vl fetch ${os}-${version}
     ansible-playbook cleanup.yaml
     ansible-playbook playbook.yml -i inventory.yaml -e @targets/${os}-${version}.yaml -e git_repo=${git_repo} -vvv
     timeout 1800 ansible-playbook openstack.yaml -e @targets/${os}-${version}.yaml -vvv
