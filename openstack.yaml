@@ -1,6 +1,40 @@
 ---
 - hosts: localhost
   tasks:
+    - name: purge the test server
+      openstack.cloud.server:
+        name: test_vm
+        state: absent
+    - name: purge the image disk
+      openstack.cloud.image:
+        name: test_img
+        state: absent
+    - name: purge keypair
+      openstack.cloud.keypair:
+        state: absent
+        name: test_keypair
+    - name: purge secgroup
+      openstack.cloud.security_group:
+        state: absent
+        name: test_sg
+
+- hosts: localhost
+  tasks:
+    - openstack.cloud.security_group:
+        state: present
+        name: test_sg
+        description: security group for test
+    - openstack.cloud.security_group_rule:
+        security_group: test_sg
+        protocol: tcp
+        port_range_min: 22
+        port_range_max: 22
+        remote_ip_prefix: 0.0.0.0/0
+    - name: Create keypair
+      openstack.cloud.keypair:
+        state: present
+        name: test_keypair
+        public_key_file: "{{ ansible_env.HOME }}/.ssh/id_ecdsa.pub"
     - name: upload the image
       openstack.cloud.image:
         name: test_img
@@ -8,23 +42,66 @@
         disk_format: qcow2
         state: present
         filename: "/var/lib/virt-lightning/pool/upstream/{{final_name}}_exp.qcow2"
-    - name: create the volume disk
-      openstack.cloud.volume:
-        name: test_vol
-        size: 30
-        bootable: yes
-        image: test_img
-    - name: create the server
+      register: result
+      until: result is not failed
+      retries: 3
+
+
+- hosts: localhost
+  tasks:
+    - name: create the server with a config_drive
       openstack.cloud.server:
         name: test_vm
         user_data: "{{lookup('file', 'user_data') }}"
-        boot_volume: test_vol
-        key_name: t450s-gone
-        flavor_ram: 1024
-        network: private
+        image: test_img
+        key_name: test_keypair
+        flavor: v3-standard-2
+        network: public
         security_groups:
-          - ssh
-        config_drive: "{{ config_drive|default('no') }}"
+          - test_sg
+        config_drive: yes
+      register: my_vm
+    - set_fact:
+        vm_ip: "{{ my_vm.server.accessIPv4 }}"
+    - name: Add my_vm in the inventory
+      add_host:
+        hostname: vm
+        ansible_user: testvm
+        ansible_ssh_host: '{{ vm_ip }}'
+        ansible_ssh_extra_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
+        ansible_ssh_private_key_file: "{{ ansible_env.HOME }}/.ssh/id_ecdsa"
+        ansible_python_interpreter: "{{ python_interpreter }}"
+
+- hosts: vm
+  tasks:
+    - name: Call uname
+      command: uname -a
+    - name: Ensure sudo and network work fine
+      command: /sbin/ping -c 1 google.com
+      become: true
+    - copy:
+        src: linux-5.15.6.tar.xz
+        dest: .
+    - command: unxz linux-5.15.6.tar.xz
+    - command: tar xf linux-5.15.6.tar
+
+- hosts: localhost
+  tasks:
+    - name: purge the test server
+      openstack.cloud.server:
+        name: test_vm
+        state: absent
+    - name: create the server with no config_drive
+      openstack.cloud.server:
+        name: test_vm
+        user_data: "{{lookup('file', 'user_data') }}"
+        image: test_img
+        key_name: test_keypair
+        flavor: v3-standard-2
+        network: public
+        security_groups:
+          - test_sg
+        config_drive: no
       register: my_vm
     - set_fact:
         vm_ip: "{{ my_vm.server.accessIPv4 }}"
@@ -35,7 +112,7 @@
         ansible_ssh_host: '{{ vm_ip }}'
         ansible_ssh_extra_args: '-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
         ansible_ssh_private_key_file: ~/.ssh/cloud.key
-        ansible_python_interpreter: "{{ python_interpreter }}" 
+        ansible_ssh_private_key_file: "{{ ansible_env.HOME }}/.ssh/id_ecdsa"
 
 - hosts: vm
   tasks:
@@ -44,6 +121,11 @@
     - name: Ensure sudo and network work fine
       command: /sbin/ping -c 1 google.com
       become: true
+    - copy:
+        src: linux-5.15.6.tar.xz
+        dest: .
+    - command: unxz linux-5.15.6.tar.xz
+    - command: tar xf linux-5.15.6.tar
 
 - hosts: localhost
   tasks:
@@ -51,7 +133,16 @@
       openstack.cloud.server:
         name: test_vm
         state: absent
-    - name: purge the volume disk
-      openstack.cloud.volume:
-        name: test_vol
+    - name: purge the image disk
+      openstack.cloud.image:
+        name: test_img
         state: absent
+    - name: purge keypair
+      openstack.cloud.keypair:
+        state: absent
+        name: test_keypair
+    - name: purge secgroup
+      openstack.cloud.security_group:
+        state: absent
+        name: test_sg
+

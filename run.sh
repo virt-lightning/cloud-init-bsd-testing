@@ -5,8 +5,8 @@ export VIRTUAL_ENV_DISABLE_PROMPT=1
 . ~/virtualenv/bin/activate
 
 
-#repo="goneri/cloud-init"
-repo="canonical/cloud-init"
+git_repo="goneri/cloud-init"
+#git_repo="canonical/cloud-init"
 promote_image=false
 
 
@@ -14,31 +14,17 @@ log_dir=$(date +results/%Y%m%d-%H%M)
 mkdir -p ${log_dir}
 
 function run_test() {
-    os=${1}
-    version=${2}
-    #git_repo=${3:-canonical/cloud-init}
-    git_repo=${3}
+    target=${1}
     ansible-playbook cleanup.yaml
-    ansible-playbook playbook.yml -i inventory.yaml -e @targets/${os}-${version}.yaml -e git_repo=${git_repo} -vvv
-    timeout 1800 ansible-playbook openstack.yaml -e @targets/${os}-${version}.yaml -vvv
-    timeout 1800 ansible-playbook openstack.yaml -e config_drive=yes -e @targets/${os}-${version}.yaml -vvv
-    ansible-playbook promote.yaml -e @targets/${os}-${version}.yaml -vvv
+    ansible-playbook playbook.yml -i inventory.yaml -e @targets/${target}.yaml -e git_repo=${git_repo}
+    timeout 1800 ansible-playbook openstack.yaml -e @targets/${target}.yaml
+    ansible-playbook promote.yaml -e @targets/${target}.yaml
+    ansible-playbook cleanup.yaml
 
 }
 
-os=openbsd
-for version in 7.0; do
-    run_test ${os} ${version} ${repo} 2>&1 | tee ${log_dir}/${os}-${version}-build.log
-done
-
-os=freebsd
-for version in 11.4 12.2; do
-    run_test ${os} ${version} ${repo} 2>&1 | tee ${log_dir}/${os}-${version}-build.log
-done
-
-os=netbsd
-for version in 8.2 9.1; do
-    run_test ${os} ${version} ${repo} 2>&1 | tee ${log_dir}/${os}-${version}-build.log
+for target in openbsd-7.0 openbsd-6.9 netbsd-9.2 netbsd-8.2 freebsd-13.0-zfs freebsd-13.0-ufs; do
+    run_test ${target} 2>&1 | tee ${log_dir}/${target}-build.log
 done
 
 #os=dragonflybsd

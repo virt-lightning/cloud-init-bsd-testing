@@ -1,6 +1,10 @@
 ---
 - hosts: localhost
   tasks:
+    - name: purge the test keypair
+      openstack.cloud.keypair:
+        name: test_keypair
+        state: absent
     - name: purge the test server
       openstack.cloud.server:
         name: test_vm

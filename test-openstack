@@ -4,10 +4,10 @@
 #. ~/openrc_rdo-cloud_v3.sh
 
 distro="${1}"
-
+key_name=goneri
 set -eux
 login="testvm"
-flavor=$(openstack flavor list -f json|jq -r '.[] | select(.RAM == 1024).ID')  # "m1.small"
+flavor=v3-standard-2
 
 function clean_up() {
 openstack server list -f value -c ID --name test_vm|xargs -r openstack server delete
@@ -19,16 +19,9 @@ openstack image list -f value -c ID --name test_img|xargs -r openstack image del
 clean_up
 ip=$(openstack floating ip list -f value -c 'Floating IP Address' --status DOWN|head -n1)
 openstack image create --disk-format qcow2 --container-format bare --file /var/lib/virt-lightning/pool/upstream/${distro}.qcow2 test_img
-openstack volume create --image $(openstack image list -f value -c ID --name test_img) --size 30 test_vol
-
-vol_id=""
-while [ -z ${vol_id}  ]; do
-    vol_id=$(openstack volume list -f value -c ID --name test_vol --status available)
-    sleep 5
-done
 
 
-openstack server create --user-data user_data --volume ${vol_id} --wait --flavor ${flavor} --network private --key-name t450s-gone --security-group ssh test_vm
+openstack server create --user-data user_data --image test_img --wait --flavor ${flavor} --network private --key-name $key_name --security-group ssh test_vm
 openstack server add floating ip test_vm ${ip}
 
 call_ssh="ssh -i ~/.ssh/cloud.key -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $login@${ip}"

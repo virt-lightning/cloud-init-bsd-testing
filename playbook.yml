@@ -52,10 +52,12 @@
         dest: builder
         version: master
     - name: Build the images
-      shell: 'sudo -E bash build.sh {{ image_version }} {{ git_repo|default("canonical/cloud-init") }} {{ git_ref|default("master") }}'
+      shell: 'sudo -E bash build.sh {{ image_version }} {{ git_repo|default("canonical/cloud-init") }} {{ git_ref|default("main") }}'
       args:
-          chdir: builder
-          creates: '{{ final_name }}.raw'
+        chdir: builder
+        creates: '{{ final_name }}.raw'
+      environment:
+        root_fs: '{{ root_fs|default("")}}'
     - name: Download the raw image
       fetch:
           src: 'builder/final.raw'
@@ -138,9 +140,9 @@
       delegate_to: newvm
       when: not final_name.startswith('netbsd')
 
-    - name: Ensure the root FS has been resized
-      assert:
-        that: hostvars.newvm.ansible_mounts[0].size_total > 25000000000
+#    - name: Ensure the root FS has been resized
+#      assert:
+#        that: hostvars.newvm.ansible_mounts[0].size_total > 25000000000
 
     - command: hostname
       register: newvm_hostname

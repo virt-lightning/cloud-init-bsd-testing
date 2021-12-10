@@ -7,6 +7,7 @@
     - file:
         path: '{{ dest_dir }}'
         state: directory
+        recurse: true
       become: true
     - name: Promote the new image (1/4)
       command: 'mv /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2 {{ dest_dir }}/{{ final_name }}.qcow2'
