@@ -23,15 +23,10 @@ function run_test() {
 
 }
 
-for target in openbsd-7.0 openbsd-6.9 netbsd-9.2 netbsd-8.2 freebsd-13.0-zfs freebsd-13.0-ufs; do
+#for target in dragonflybsd-6.0.1-hammer2 dragonflybsd-6.0.1-ufs openbsd-7.0 openbsd-6.9 freebsd-13.0-zfs freebsd-13.0-ufs; do
+for target in dragonflybsd-6.0.1-ufs; do
     run_test ${target} 2>&1 | tee ${log_dir}/${target}-build.log
 done
-
-#os=dragonflybsd
-#for version in 5.8.3; do
-#    run_test ${os} ${version} ${repo} > ${log_dir}/${os}-${version}-build.log 2>&1
-#done
-
 
 sudo find /var/www/bsd-cloud-image.org -type f -exec chmod 644 {} \;
 sudo find /var/www/bsd-cloud-image.org -type d -exec chmod 755 {} \;
