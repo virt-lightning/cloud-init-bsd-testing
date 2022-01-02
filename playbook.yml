@@ -67,12 +67,14 @@
         dest: builder
         version: master
     - name: Build the images
-      shell: 'sudo -E bash build.sh {{ image_version }} {{ git_repo|default("canonical/cloud-init") }} {{ git_ref|default("main") }}'
+      shell: 'sudo -E bash build.sh {{ image_version }} {{ git_repo|default("canonical/cloud-init") }} {{ git_ref|default("main") }} 2>&1 | tee build.log '
       args:
         chdir: builder
         creates: '{{ final_name }}.raw'
       environment:
         root_fs: '{{ root_fs|default("")}}'
+      register: result
+    - debug: var=result
     - name: Download the raw image
       fetch:
           src: 'builder/final.raw'

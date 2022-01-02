@@ -1,7 +1,8 @@
 ---
 image_os: freebsd
-image_version: 12.2
-final_name: "{{ image_os }}-{{ image_version }}"
+image_version: 12.3
+root_fs: ufs
+final_name: "{{ image_os }}-{{ image_version }}-{{ root_fs }}"
 base:
   distro: freebsd-12.2
 dependencies:
