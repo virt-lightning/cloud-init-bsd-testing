@@ -3,7 +3,8 @@ set -euxo pipefail
 export ANSIBLE_SSH_RETRIES=10
 export VIRTUAL_ENV_DISABLE_PROMPT=1
 . ~/virtualenv/bin/activate
-
+ansible-galaxy collection install --requirements-file requirements.yml --collections-path collections
+find collections/ansible_collections/ -maxdepth 3 -name requirements.txt -exec pip install -r {} \;
 
 git_repo="goneri/cloud-init"
 #git_repo="canonical/cloud-init"
