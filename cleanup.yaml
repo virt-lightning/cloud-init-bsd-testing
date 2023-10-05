@@ -1,25 +1,12 @@
 ---
 - hosts: localhost
   tasks:
-    - name: purge the test keypair
-      openstack.cloud.keypair:
-        name: test_keypair
-        state: absent
-    - name: purge the test server
-      openstack.cloud.server:
-        name: test_vm
-        state: absent
-    - name: purge the volume disk
-      openstack.cloud.volume:
-        name: test_vol
-        state: absent
-    - name: purge the image
-      openstack.cloud.image:
-        name: test_img
-        state: absent
+    - name: Purge the openstack project
+      include_role:
+        name: purge
     - name: Clean up the temp image
       file:
-        path: "{{ item }}" 
+        path: "{{ item }}"
         state: absent
       with_fileglob:
         - '/var/lib/virt-lightning/pool/upstream/*_exp.qcow2'

@@ -1,0 +1,17 @@
+---
+- name: purge the test server
+  openstack.cloud.server:
+    name: test_vm
+    state: absent
+- name: purge the image disk
+  openstack.cloud.image:
+    name: test_img
+    state: absent
+- name: purge keypair
+  openstack.cloud.keypair:
+    state: absent
+    name: test_keypair
+- name: purge secgroup
+  openstack.cloud.security_group:
+    state: absent
+    name: test_sg
