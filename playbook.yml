@@ -19,7 +19,10 @@
     - when: image_os == "dragonflybsd"
       block:
       - name: "DFly/pkg turn off SSL, see https://www.reddit.com/r/dragonflybsd/comments/q9xowg/certificate_verification_failed_for_odigital/hh0a01s/"
-        command: sed -i.bak 's,https,http,' /usr/local/etc/pkg/repos/df-latest.conf
+        command: sed -i.bak 's,https:,http:,' /usr/local/etc/pkg/repos/df-latest.conf
+        become: true
+      - name: "DFly/pkg avoid pkg: invalid scheme ftp, pkg: Cannot parse configuration file!"
+        command: sed -i.bak 's,ftp:,http:,' /usr/local/etc/pkg/repos/df-latest.conf
         become: true
       - name: upgrade and install git
         shell: |
@@ -38,9 +41,12 @@
         reboot:
         become: true
       - name: Upgrade packages
-        command: pkg_add -uvi
-        become: true
+        ansible.builtin.raw: sudo pkg_add -uvi
+        register: result
+        retries: 3
+        until: result is not failed
     - when: ansible_os_family == "NetBSD"
+      name: Install the dependency on NetBSD
       block:
       - name: install the dependencies
         shell: "/usr/sbin/pkg_add -U {{ item }}"
@@ -54,11 +60,21 @@
         args:
           creates: /etc/openssl/certs/ca-certificates.crt
 
-    - name: install the dependencies
+    - debug: var=ansible_os_family
+    - debug: msg='pkg_add {{ dependencies| join(" ") }}'
+    - name: install the dependencies (OpenBSD)
+      command: 'pkg_add {{ dependencies| join(" ") }}'
+      become: true
+      when: ansible_os_family == "OpenBSD"
+
+
+    - name: install the dependencies (generic)
       package:
           name: '{{ dependencies }}'
       become: true
-      when: ansible_os_family != "NetBSD"
+      when: ansible_os_family not in ["NetBSD", "OpenBSD"]
+      environment:
+        IGNORE_OSVERSION: yes
 
     - command: git config --global http.sslVerify false
     - name: Fetch the builder script
@@ -67,7 +83,7 @@
         dest: builder
         version: master
     - name: Build the images
-      shell: 'sudo -E bash build.sh {{ image_version }} {{ git_repo|default("canonical/cloud-init") }} {{ git_ref|default("main") }} 2>&1 | tee build.log '
+      shell: 'sudo -E bash build.sh {{ image_version }} {{ git_repo|default("canonical/cloud-init") }} {{ git_ref|default("main") }} debug 2>&1 | tee build.log '
       args:
         chdir: builder
         creates: '{{ final_name }}.raw'

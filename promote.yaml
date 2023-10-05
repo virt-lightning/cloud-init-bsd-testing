@@ -3,8 +3,8 @@
   vars:
     www_dir: /var/www/bsd-cloud-image.org/images
     dest_dir: '{{ www_dir }}/{{ image_os }}/{{ image_version }}'
-    qcow2_swift_path: "images/{{ image_os }}/{{ image_version}}/{{ ansible_date_time.date }}/{{ root_fs }}/{{ final_name }}.qcow2"
-    yaml_swift_path: "images/{{ image_os }}/{{ image_version}}/{{ ansible_date_time.date }}/{{ root_fs }}/{{ final_name }}.yaml"
+    qcow2_swift_path: "images/{{ image_os }}/{{ image_version}}/{{ ansible_date_time.date }}/{{ root_fs }}/{{ final_name }}-{{ ansible_date_time.date }}.qcow2"
+    yaml_swift_path: "images/{{ image_os }}/{{ image_version}}/{{ ansible_date_time.date }}/{{ root_fs }}/{{ final_name }}-{{ ansible_date_time.date }}.yaml"
   tasks:
     - file:
         path: '{{ dest_dir }}'
@@ -38,14 +38,19 @@
         container: bsd-cloud-image.org
         name: "{{ qcow2_swift_path }}"
         filename: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2'
-        container_access: public
+      register: result
+      until: result is not failed
+      retries: 3
 
     - name: upload the YAML file
       openstack.cloud.object:
         container: bsd-cloud-image.org
         name: "{{ yaml_swift_path }}"
         filename: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}.yaml'
-        container_access: public
+      register: result
+      until: result is not failed
+      retries: 3
+
 
     - debug:
         msg: "Image availabe at: https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org/{{ qcow2_swift_path }}"
