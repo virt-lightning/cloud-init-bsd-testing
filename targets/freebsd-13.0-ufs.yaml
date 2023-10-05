@@ -1,7 +1,7 @@
 ---
 image_os: freebsd
 image_version: 13.0
-root_fs: zfs
+root_fs: ufs
 final_name: "{{ image_os }}-{{ image_version }}-{{ root_fs }}"
 base:
   distro: freebsd-13.0-ufs
