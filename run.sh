@@ -8,8 +8,7 @@ find collections/ansible_collections/ -maxdepth 3 -name requirements.txt -exec p
 
 git_repo="goneri/cloud-init"
 #git_repo="canonical/cloud-init"
-promote_image=false
-
+promote=false
 
 log_dir=$(date +results/%Y%m%d-%H%M)
 mkdir -p ${log_dir}
@@ -17,9 +16,11 @@ mkdir -p ${log_dir}
 function run_test() {
     target=${1}
     ansible-playbook cleanup.yaml
-    ansible-playbook playbook.yml -i inventory.yaml -e @targets/${target}.yaml -e git_repo=${git_repo}
+    ansible-playbook playbook.yml -vvv -i inventory.yaml -e @targets/${target}.yaml -e git_repo=${git_repo}
     timeout 1800 ansible-playbook openstack.yaml -e @targets/${target}.yaml
-    ansible-playbook promote.yaml -e @targets/${target}.yaml
+    if [ "${promote}" = true ] ; then
+        ansible-playbook promote.yaml -e @targets/${target}.yaml
+    fi
     ansible-playbook cleanup.yaml
 
 }
