@@ -25,7 +25,7 @@ function run_test() {
 
 }
 
-for target in dragonflybsd-6.0.1-hammer2 dragonflybsd-6.0.1-ufs freebsd-12.3-zfs freebsd-13.0-ufs freebsd-13.0-zfs netbsd-9.2 openbsd-7.0; do
+for target in dragonflybsd-6.2.2-hammer2 dragonflybsd-6.2.2-ufs netbsd-9.3 freebsd-13.2-ufs freebsd-13.2-zfs openbsd-7.2; do
     run_test ${target} 2>&1 | tee ${log_dir}/${target}-build.log
 done
 
