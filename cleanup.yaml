@@ -2,18 +2,21 @@
 - hosts: localhost
   tasks:
     - name: Purge the openstack project
-      include_role:
+      ansible.builtin.include_role:
         name: purge
+
     - name: Clean up the temp image
-      file:
+      with_fileglob:
+        - /var/lib/virt-lightning/pool/upstream/*_exp.qcow2
+      ansible.builtin.file:
         path: "{{ item }}"
         state: absent
-      with_fileglob:
-        - '/var/lib/virt-lightning/pool/upstream/*_exp.qcow2'
+
     - name: Clean up the local temp dir
-      file:
+      ansible.builtin.file:
         path: images/basehost
         state: absent
+
     - name: Clean up the basehost
       virt_lightning.virt_lightning.vm:
         name: basehost
@@ -22,4 +25,3 @@
       virt_lightning.virt_lightning.vm:
         name: newvm
         state: absent
-

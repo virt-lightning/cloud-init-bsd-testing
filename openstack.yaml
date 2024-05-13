@@ -2,17 +2,19 @@
 - hosts: localhost
   gather_facts: false
   tasks:
-    - include_role:
+    - ansible.builtin.include_role:
         name: purge
 
 - hosts: localhost
   tasks:
-    - include_role:
-        name: deploy
-      vars:
+    - vars:
         deploy__config_drive: false
-    - include_role:
+      ansible.builtin.include_role:
+        name: deploy
+
+    - ansible.builtin.include_role:
         name: test_vm
+
     - name: purge the test server
       openstack.cloud.server:
         name: test_vm
@@ -20,10 +22,11 @@
 
 - hosts: localhost
   tasks:
-    - include_role:
-        name: deploy
-      vars:
+    - vars:
         deploy__config_drive: true
+      ansible.builtin.include_role:
+        name: deploy
+
     - include_role:
         name: test_vm
     - name: purge the test server

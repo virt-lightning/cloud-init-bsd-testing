@@ -6,9 +6,9 @@ final_name: "{{ image_os }}-{{ image_version }}"
 base:
   distro: netbsd-9.1
 dependencies:
-    - git
-    - curl
-    - bash
-    - mozilla-rootcerts
+  - git
+  - curl
+  - bash
+  - mozilla-rootcerts
 builder_repo: https://github.com/virt-lightning/netbsd-cloud-images
 python_interpreter: /usr/pkg/bin/python3.8

@@ -2,42 +2,46 @@
 - hosts: localhost
   vars:
     www_dir: /var/www/bsd-cloud-image.org/images
-    dest_dir: '{{ www_dir }}/{{ image_os }}/{{ image_version }}'
-    qcow2_swift_path: "images/{{ image_os }}/{{ image_version}}/{{ ansible_date_time.date }}/{{ root_fs }}/{{ final_name }}-{{ ansible_date_time.date }}.qcow2"
-    yaml_swift_path: "images/{{ image_os }}/{{ image_version}}/{{ ansible_date_time.date }}/{{ root_fs }}/{{ final_name }}-{{ ansible_date_time.date }}.yaml"
+    dest_dir: "{{ www_dir }}/{{ image_os }}/{{ image_version }}"
+    qcow2_swift_path: images/{{ image_os }}/{{ image_version}}/{{ ansible_date_time.date }}/{{ root_fs }}/{{ final_name }}-{{ ansible_date_time.date }}.qcow2
+    yaml_swift_path: images/{{ image_os }}/{{ image_version}}/{{ ansible_date_time.date }}/{{ root_fs }}/{{ final_name }}-{{ ansible_date_time.date }}.yaml
   tasks:
-    - file:
-        path: '{{ dest_dir }}'
+    - become: true
+      ansible.builtin.file:
+        path: "{{ dest_dir }}"
         state: directory
         recurse: true
-      become: true
+
     - name: Promote the new image Virt-Lightning (1/4)
-      command: 'mv /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2 {{ dest_dir }}/{{ final_name }}.qcow2'
       become: true
+      ansible.builtin.command: mv /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2 {{ dest_dir }}/{{ final_name }}.qcow2
+
     - name: Promote the new image Virt-Lightning (yaml) (2/4)
-      command: 'mv /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.yaml {{ dest_dir }}/{{ final_name }}.yaml'
       become: true
+      ansible.builtin.command: mv /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.yaml {{ dest_dir }}/{{ final_name }}.yaml
+
     - name: Promote the new image Virt-Lightning (3/4)
-      command: 'cp {{ dest_dir }}/{{ final_name }}.qcow2 /var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2'
       become: true
+      ansible.builtin.command: cp {{ dest_dir }}/{{ final_name }}.qcow2 /var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2
+
     - name: Promote the new image Virt-Lightning (yaml) (4/4)
-      command: 'cp {{ dest_dir }}/{{ final_name }}.yaml /var/lib/virt-lightning/pool/upstream/{{ final_name }}.yaml'
       become: true
+      ansible.builtin.command: cp {{ dest_dir }}/{{ final_name }}.yaml /var/lib/virt-lightning/pool/upstream/{{ final_name }}.yaml
 
     - name: Fix the ownership of the target dir Virt-Lightning
-      file:
-        path: '{{ dest_dir }}'
+      become: true
+      ansible.builtin.file:
+        path: "{{ dest_dir }}"
         state: directory
-        recurse: yes
+        recurse: true
         owner: goneri
         group: goneri
-      become: true
 
     - name: upload the qcow2 file
       openstack.cloud.object:
         container: bsd-cloud-image.org
         name: "{{ qcow2_swift_path }}"
-        filename: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2'
+        filename: /var/lib/virt-lightning/pool/upstream/{{ final_name }}.qcow2
       register: result
       until: result is not failed
       retries: 3
@@ -46,11 +50,11 @@
       openstack.cloud.object:
         container: bsd-cloud-image.org
         name: "{{ yaml_swift_path }}"
-        filename: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}.yaml'
+        filename: /var/lib/virt-lightning/pool/upstream/{{ final_name }}.yaml
       register: result
       until: result is not failed
       retries: 3
 
-
-    - debug:
-        msg: "Image availabe at: https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org/{{ qcow2_swift_path }}"
+    - ansible.builtin.debug:
+        msg: "Image availabe at: https://object-storage.public.mtl1.vexxhost.net/swift/v1/1dbafeefbd4f4c80864414a441e72dd2/bsd-cloud-image.org/{{ qcow2_swift_path
+          }}"
