@@ -6,10 +6,10 @@ final_name: "{{ image_os }}-{{ image_version }}-{{ root_fs }}"
 base:
   distro: freebsd-13.0-ufs
 dependencies:
-    - qemu-utils
-    - curl
-    - bash
-    - git
-    - ca_root_nss
+  - qemu-utils
+  - curl
+  - bash
+  - git
+  - ca_root_nss
 builder_repo: https://github.com/virt-lightning/freebsd-cloud-images
 python_interpreter: /usr/local/bin/python3

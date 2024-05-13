@@ -6,11 +6,11 @@ final_name: "{{ image_os }}-{{ image_version }}"
 base:
   distro: openbsd-6.9
 dependencies:
-    - coreutils
-    - bash
-    - gsed
-    - flock
-    - bash
-    - git
+  - coreutils
+  - bash
+  - gsed
+  - flock
+  - bash
+  - git
 builder_repo: https://github.com/goneri/pcib
 python_interpreter: /usr/local/bin/python3

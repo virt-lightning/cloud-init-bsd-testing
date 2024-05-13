@@ -3,115 +3,137 @@
   tasks:
     - name: Create the Base VM
       virt_lightning.virt_lightning.vm:
-        distro: '{{ base.distro }}'
+        distro: "{{ base.distro }}"
         name: basehost
         memory: 4096
         state: present
 
     - name: Refresh inventory to ensure new instaces exist in inventory
-      meta: refresh_inventory
+      ansible.builtin.meta: refresh_inventory
 
 - hosts: basehost
   tasks:
-    - debug: var=ansible_distribution
-    - debug: var=ansible_distribution_major_version
-    - debug: var=ansible_distribution_version
+    - ansible.builtin.debug:
+        var: ansible_distribution
+
+    - ansible.builtin.debug:
+        var: ansible_distribution_major_version
+
+    - ansible.builtin.debug:
+        var: ansible_distribution_version
+
     - when: image_os == "dragonflybsd"
       block:
-      - name: "DFly/pkg turn off SSL, see https://www.reddit.com/r/dragonflybsd/comments/q9xowg/certificate_verification_failed_for_odigital/hh0a01s/"
-        command: sed -i.bak 's,https:,http:,' /usr/local/etc/pkg/repos/df-latest.conf
-        become: true
-      - name: "DFly/pkg avoid pkg: invalid scheme ftp, pkg: Cannot parse configuration file!"
-        command: sed -i.bak 's,ftp:,http:,' /usr/local/etc/pkg/repos/df-latest.conf
-        become: true
-      - name: upgrade and install git
-        shell: |
-          pkg update
-          pkg upgrade -y || true
-          pkg upgrade -y || true
-          pkg install -y git || true
-          pkg install -y git
-        become: true
+        - name: DFly/pkg turn off SSL, see https://www.reddit.com/r/dragonflybsd/comments/q9xowg/certificate_verification_failed_for_odigital/hh0a01s/
+          become: true
+          ansible.builtin.command: sed -i.bak 's,https:,http:,' /usr/local/etc/pkg/repos/df-latest.conf
+
+        - name: "DFly/pkg avoid pkg: invalid scheme ftp, pkg: Cannot parse configuration file!"
+          become: true
+          ansible.builtin.command: sed -i.bak 's,ftp:,http:,' /usr/local/etc/pkg/repos/df-latest.conf
+
+        - name: upgrade and install git
+          become: true
+          ansible.builtin.shell: |
+            pkg update
+            pkg upgrade -y || true
+            pkg upgrade -y || true
+            pkg install -y git || true
+            pkg install -y git
+
     - when: ansible_distribution == 'OpenBSD' and ansible_distribution_version != image_version|string
       block:
-      - name: Upgrade OpenBSD
-        command: sysupgrade -rn
-        become: true
-      - name: Unconditionally on the new version
-        reboot:
-        become: true
-      - name: Upgrade packages
-        ansible.builtin.raw: sudo pkg_add -uvi
-        register: result
-        retries: 3
-        until: result is not failed
+        - name: Upgrade OpenBSD
+          become: true
+          ansible.builtin.command: sysupgrade -rn
+
+        - name: Unconditionally on the new version
+          become: true
+          ansible.builtin.reboot:
+
+        - name: Upgrade packages
+          ansible.builtin.raw: sudo pkg_add -uvi
+          register: result
+          retries: 3
+          until: result is not failed
     - when: ansible_os_family == "NetBSD"
       name: Install the dependency on NetBSD
       block:
-      - name: install the dependencies
-        shell: "/usr/sbin/pkg_add -U {{ item }}"
-        with_items: '{{ dependencies }}'
-        become: true
-        environment:
-            PKG_PATH: 'http://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/{{ ansible_machine }}/{{ ansible_distribution_release }}/All/'
-      - name: Install the rootcerts
-        command: /usr/pkg/sbin/mozilla-rootcerts install
-        become: true
-        args:
-          creates: /etc/openssl/certs/ca-certificates.crt
+        - name: install the dependencies
+          become: true
+          environment:
+            PKG_PATH: http://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/{{ ansible_machine }}/{{ ansible_distribution_release }}/All/
+          ansible.builtin.shell: /usr/sbin/pkg_add -U {{ item }}
+          loop: "{{ dependencies |flatten(levels=1) }}"
 
-    - debug: var=ansible_os_family
-    - debug: msg='pkg_add {{ dependencies| join(" ") }}'
+        - name: Install the rootcerts
+          become: true
+          args:
+            creates: /etc/openssl/certs/ca-certificates.crt
+          ansible.builtin.command: /usr/pkg/sbin/mozilla-rootcerts install
+
+    - ansible.builtin.debug:
+        var: ansible_os_family
+
+    - ansible.builtin.debug:
+        msg: "'pkg_add"
+
     - name: install the dependencies (OpenBSD)
-      command: 'pkg_add {{ dependencies| join(" ") }}'
       become: true
       when: ansible_os_family == "OpenBSD"
 
+      ansible.builtin.command: pkg_add {{ dependencies| join(" ") }}
 
     - name: install the dependencies (generic)
-      package:
-          name: '{{ dependencies }}'
       become: true
       when: ansible_os_family not in ["NetBSD", "OpenBSD"]
       environment:
-        IGNORE_OSVERSION: yes
+        IGNORE_OSVERSION: true
+      ansible.builtin.package:
+        name: "{{ dependencies }}"
 
-    - command: git config --global http.sslVerify false
+    - ansible.builtin.command: git config --global http.sslVerify false
+
     - name: Fetch the builder script
-      git:
-        repo: '{{ builder_repo }}'
+      ansible.builtin.git:
+        repo: "{{ builder_repo }}"
         dest: builder
         version: master
+
     - name: Build the images
-      shell: 'sudo -E bash build.sh {{ image_version }} {{ git_repo|default("canonical/cloud-init") }} {{ git_ref|default("main") }} debug 2>&1 | tee build.log '
       args:
         chdir: builder
-        creates: '{{ final_name }}.raw'
+        creates: "{{ final_name }}.raw"
       environment:
         root_fs: '{{ root_fs|default("")}}'
       register: result
-    - debug: var=result
+      ansible.builtin.shell: 'sudo -E bash build.sh {{ image_version }} {{ git_repo|default("canonical/cloud-init") }} {{ git_ref|default("main") }} debug 2>&1 |
+        tee build.log '
+
+    - ansible.builtin.debug:
+        var: result
+
     - name: Download the raw image
-      fetch:
-          src: 'builder/final.raw'
-          dest: images/
+      ansible.builtin.fetch:
+        src: builder/final.raw
+        dest: images/
 
 - hosts: localhost
   tasks:
     - name: Export the images
-      command: 'qemu-img convert -f raw -O qcow2 -c images/basehost/builder/final.raw /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2'
       args:
-        creates: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2'
+        creates: /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2
+      ansible.builtin.command: qemu-img convert -f raw -O qcow2 -c images/basehost/builder/final.raw /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.qcow2
 
     - name: Write the image metadata
-      copy:
+      ansible.builtin.copy:
         content: |
           python_interpreter: {{ python_interpreter }}
-        dest: '/var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.yaml'
+        dest: /var/lib/virt-lightning/pool/upstream/{{ final_name }}_exp.yaml
 
     - name: Create the new VM
       virt_lightning.virt_lightning.vm:
-        distro: '{{ final_name }}_exp'
+        distro: "{{ final_name }}_exp"
         name: newvm
         state: present
 
@@ -119,83 +141,98 @@
       meta: refresh_inventory
 
     - name: gather facts from the new host
-      setup:
       delegate_to: newvm
       delegate_facts: true
+      ansible.builtin.setup:
 
-    - debug: var=hostvars.newvm
-    - debug: var=image_version
-    - debug: var=image_os
-    - debug: var=final_name
-    - debug: var=hostvars.newvm.ansible_facts.os_family
-    - debug: var=hostvars.newvm.ansible_facts.distribution_version
-    - debug: var=hostvars.newvm.ansible_kernel
+    - ansible.builtin.debug:
+        var: hostvars.newvm
 
-    - assert:
+    - ansible.builtin.debug:
+        var: image_version
+
+    - ansible.builtin.debug:
+        var: image_os
+
+    - ansible.builtin.debug:
+        var: final_name
+
+    - ansible.builtin.debug:
+        var: hostvars.newvm.ansible_facts.os_family
+
+    - ansible.builtin.debug:
+        var: hostvars.newvm.ansible_facts.distribution_version
+
+    - ansible.builtin.debug:
+        var: hostvars.newvm.ansible_kernel
+
+    - ansible.builtin.assert:
         that:
           - "'192.168.123.1' in hostvars.newvm.ansible_dns.nameservers"
 
-    - assert:
+    - when: image_os != "dragonflybsd"
+      ansible.builtin.assert:
         that:
           - hostvars.newvm.ansible_facts.os_family|lower == image_os
-      when: image_os != "dragonflybsd"
 
-    - assert:
+    - when: image_os == "dragonflybsd"
+      ansible.builtin.assert:
         that:
           - hostvars.newvm.ansible_facts.os_family == "DragonFly"
-      when: image_os == "dragonflybsd"
 
-    - assert:
+    - when: not final_name.startswith('netbsd') and not image_os == "dragonflybsd"
+      ansible.builtin.assert:
         that:
           - hostvars.newvm.ansible_facts.distribution_version == image_version|string
-      when: not final_name.startswith('netbsd') and not image_os == "dragonflybsd"
 
-    - assert:
+    - when: final_name.startswith('netbsd')
+      ansible.builtin.assert:
         that:
           - hostvars.newvm.ansible_kernel == image_version|string
-      when: final_name.startswith('netbsd')
 
-    - command: pkgin update
-      become: true
+    - become: true
       delegate_to: newvm
       when: final_name.startswith('netbsd')
+      ansible.builtin.command: pkgin update
 
-    - command: pkgin -y install curl
-      become: true
+    - become: true
       delegate_to: newvm
       when: final_name.startswith('netbsd')
+      ansible.builtin.command: pkgin -y install curl
 
     - name: Install curl package
-      package:
-          name: curl
-          # update_cache: true
       become: true
       delegate_to: newvm
       when: not final_name.startswith('netbsd')
 
-#    - name: Ensure the root FS has been resized
-#      assert:
-#        that: hostvars.newvm.ansible_mounts[0].size_total > 25000000000
+      #    - name: Ensure the root FS has been resized
+      #      assert:
+      #        that: hostvars.newvm.ansible_mounts[0].size_total > 25000000000
+      ansible.builtin.package:
+        name: curl
+    # update_cache: true
 
-    - command: hostname
-      register: newvm_hostname
+    - register: newvm_hostname
       delegate_to: newvm
+      ansible.builtin.command: hostname
+
     - name: Ensure the hostname is set properly
-      assert:
+      ansible.builtin.assert:
         that: newvm_hostname.stdout == "newvm"
 
     - name: Run a command as root with su to be sure the password is set
-      command: uptime
       vars:
-          become: yes
-          become_method: su
-          become_user: root
-          become_password: root
+        become: true
+        become_method: su
+        become_user: root
+        become_password: root
+      ansible.builtin.command: uptime
 
     - name: Destroy the new VM
       virt_lightning.virt_lightning.vm:
         name: newvm
         state: absent
+
     - name: Destroy the VM
       virt_lightning.virt_lightning.vm:
         name: basehost
