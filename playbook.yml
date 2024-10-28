@@ -5,7 +5,7 @@
       virt_lightning.virt_lightning.vm:
         distro: '{{ base.distro }}'
         name: basehost
-        memory: 4096
+        memory: 8192
         state: present
 
     - name: Refresh inventory to ensure new instaces exist in inventory
@@ -27,11 +27,20 @@
       - name: upgrade and install git
         shell: |
           pkg update
-          pkg upgrade -y || true
+          pkg install -y pkg || true
+          pkg update
           pkg upgrade -y || true
           pkg install -y git || true
           pkg install -y git
         become: true
+    - when: image_os == "freebsd"
+      block:
+      - name: upgrade and install git
+        shell: |
+          IGNORE_OSVERSION=yes pkg update
+          pkg install -y git
+        become: true
+
     - when: ansible_distribution == 'OpenBSD' and ansible_distribution_version != image_version|string
       block:
       - name: Upgrade OpenBSD
@@ -53,7 +62,7 @@
         with_items: '{{ dependencies }}'
         become: true
         environment:
-            PKG_PATH: 'http://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/{{ ansible_machine }}/{{ ansible_distribution_release }}/All/'
+            PKG_PATH: 'http://cdn.netbsd.org/pub/pkgsrc/packages/NetBSD/{{ ansible_machine }}/{{ ansible_distribution_release }}/All'
       - name: Install the rootcerts
         command: /usr/pkg/sbin/mozilla-rootcerts install
         become: true
@@ -83,12 +92,13 @@
         dest: builder
         version: master
     - name: Build the images
-      shell: 'sudo -E bash build.sh {{ image_version }} {{ git_repo|default("canonical/cloud-init") }} {{ git_ref|default("main") }} debug 2>&1 | tee build.log '
+      shell: 'sudo -E bash build.sh {{ image_version }} {{ git_repo|default("canonical/cloud-init") }} {{ git_ref|default("main") }} 2>&1 | tee build.log '
       args:
         chdir: builder
         creates: '{{ final_name }}.raw'
       environment:
         root_fs: '{{ root_fs|default("")}}'
+        PYTHON: '{{ python_interpreter }}'
       register: result
     - debug: var=result
     - name: Download the raw image
@@ -165,10 +175,8 @@
       delegate_to: newvm
       when: final_name.startswith('netbsd')
 
-    - name: Install curl package
-      package:
-          name: curl
-          # update_cache: true
+    - package:
+        name: curl
       become: true
       delegate_to: newvm
       when: not final_name.startswith('netbsd')

@@ -1,0 +1,11 @@
+---
+image_os: dragonflybsd
+image_version: 6.4.0
+root_fs: ufs
+final_name: "{{ image_os }}-{{ image_version }}-{{ root_fs }}"
+base:
+  distro: dragonflybsd-6.2.2-ufs
+dependencies:
+  - git
+builder_repo: https://github.com/virt-lightning/dragonflybsd-cloud-images
+python_interpreter: /usr/local/bin/python3.9

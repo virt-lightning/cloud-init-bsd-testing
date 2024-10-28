@@ -1,0 +1,15 @@
+---
+image_os: freebsd
+image_version: 13.3
+root_fs: ufs
+final_name: "{{ image_os }}-{{ image_version }}-{{ root_fs }}"
+base:
+  distro: freebsd-13.2-ufs
+dependencies:
+  - qemu-guest-agent
+  - curl
+  - bash
+  - git
+  - ca_root_nss
+builder_repo: https://github.com/virt-lightning/freebsd-cloud-images
+python_interpreter: /usr/local/bin/python3

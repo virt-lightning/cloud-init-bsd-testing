@@ -1,0 +1,16 @@
+---
+image_os: openbsd
+image_version: 7.5
+root_fs: ufs
+final_name: "{{ image_os }}-{{ image_version }}"
+base:
+  distro: openbsd-7.4
+dependencies:
+  - coreutils
+  - bash
+  - gsed
+  - flock
+  - bash
+  - git
+builder_repo: https://github.com/goneri/pcib
+python_interpreter: /usr/local/bin/python3

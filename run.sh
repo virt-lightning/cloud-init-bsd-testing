@@ -16,7 +16,7 @@ mkdir -p ${log_dir}
 function run_test() {
     target=${1}
     ansible-playbook cleanup.yaml
-    ansible-playbook playbook.yml -vvv -i inventory.yaml -e @targets/${target}.yaml -e git_repo=${git_repo}
+    ansible-playbook playbook.yml -i inventory.yaml -e @targets/${target}.yaml -e git_repo=${git_repo}
     timeout 1800 ansible-playbook openstack.yaml -e @targets/${target}.yaml
     if [ "${promote}" = true ] ; then
         ansible-playbook promote.yaml -e @targets/${target}.yaml
@@ -25,9 +25,6 @@ function run_test() {
 
 }
 
-for target in dragonflybsd-6.2.2-hammer2 dragonflybsd-6.2.2-ufs netbsd-9.3 freebsd-13.2-ufs freebsd-13.2-zfs openbsd-7.2; do
+for target in freebsd-13.4-ufs freebsd-13.4-zfs freebsd-14.1-ufs freebsd-14.1-zfs ;do
     run_test ${target} 2>&1 | tee ${log_dir}/${target}-build.log
 done
-
-sudo find /var/www/bsd-cloud-image.org -type f -exec chmod 644 {} \;
-sudo find /var/www/bsd-cloud-image.org -type d -exec chmod 755 {} \;

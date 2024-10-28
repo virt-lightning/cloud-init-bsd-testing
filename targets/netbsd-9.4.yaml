@@ -1,0 +1,14 @@
+---
+image_os: netbsd
+image_version: 9.4
+root_fs: ufs
+final_name: "{{ image_os }}-{{ image_version }}"
+base:
+  distro: netbsd-9.3
+dependencies:
+    - git
+    - curl
+    - mozilla-rootcerts
+    - python312
+builder_repo: https://github.com/virt-lightning/netbsd-cloud-images
+python_interpreter: /usr/pkg/bin/python3.12
